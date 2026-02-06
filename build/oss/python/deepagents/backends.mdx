@@ -3,6 +3,11 @@ title: Backends
 description: Choose and configure filesystem backends for deep agents. You can specify routes to different backends, implement virtual filesystems, and enforce policies.
 ---
 
+import BackendState from '/snippets/backend-state.mdx';
+import BackendFilesystem from '/snippets/backend-filesystem.mdx';
+import BackendStore from '/snippets/backend-store.mdx';
+import BackendComposite from '/snippets/backend-composite.mdx';
+
 Deep agents expose a filesystem surface to the agent via tools like `ls`, `read_file`, `write_file`, `edit_file`, `glob`, and `grep`. These tools operate through a pluggable backend.
 
 ```mermaid
@@ -39,20 +44,7 @@ Here are a few pre-built filesystem backends that you can quickly use with your 
 
 ### StateBackend (ephemeral)
 
-```python
-# By default we provide a StateBackend
-agent = create_deep_agent()
-
-# Under the hood, it looks like
-from deepagents.backends import StateBackend
-
-agent = create_deep_agent(
-    backend=(lambda rt: StateBackend(rt))   # Note that the tools access State through the runtime.state
-)
-```
-
-
-
+<BackendState />
 
 **How it works:**
 - Stores files in LangGraph agent state for the current thread.
@@ -91,16 +83,7 @@ Use with caution and only in appropriate environments.
    Note that the default (`virtual_mode=False`) provides no security even with `root_dir` set.
 </Warning>
 
-```python
-from deepagents.backends import FilesystemBackend
-
-agent = create_deep_agent(
-    backend=FilesystemBackend(root_dir=".", virtual_mode=True)
-)
-```
-
-
-
+<BackendFilesystem />
 
 **How it works:**
 - Reads/writes real files under a configurable `root_dir`.
@@ -114,18 +97,7 @@ agent = create_deep_agent(
 
 ### StoreBackend (LangGraph store)
 
-```python
-from langgraph.store.memory import InMemoryStore
-from deepagents.backends import StoreBackend
-
-agent = create_deep_agent(
-    backend=(lambda rt: StoreBackend(rt)),   # Note that the tools access Store through the runtime.store
-    store=InMemoryStore()
-)
-```
-
-
-
+<BackendStore />
 
 **How it works:**
 - Stores files in a LangGraph [`BaseStore`](https://reference.langchain.com/python/langgraph/store/#langgraph.store.base.BaseStore) provided by the runtime, enabling cross‑thread durable storage.
@@ -137,26 +109,7 @@ agent = create_deep_agent(
 
 ### CompositeBackend (router)
 
-```python
-from deepagents import create_deep_agent
-from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
-from langgraph.store.memory import InMemoryStore
-
-composite_backend = lambda rt: CompositeBackend(
-    default=StateBackend(rt),
-    routes={
-        "/memories/": StoreBackend(rt),
-    }
-)
-
-agent = create_deep_agent(
-    backend=composite_backend,
-    store=InMemoryStore()  # Store passed to create_deep_agent, not backend
-)
-```
-
-
-
+<BackendComposite />
 
 **How it works:**
 - Routes file operations to different backends based on path prefix.

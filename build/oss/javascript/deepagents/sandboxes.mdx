@@ -53,6 +53,8 @@ graph LR
 </CardGroup>
 
 
+
+
 ## Basic usage
 
 ```typescript
@@ -88,6 +90,8 @@ try {
 ```
 
 
+
+
 ## How sandboxes work
 
 ### Isolation boundaries
@@ -120,7 +124,13 @@ This design means:
 - **Adding a new provider is straightforward.** Implement `execute()` — the base class handles everything else.
 - **The `execute` tool is conditionally available.** On every model call, the harness checks whether the backend implements `SandboxBackendProtocol`. If not, the tool is filtered out and the agent never sees it.
 
-When the agent calls the `execute` tool, it provides a `command` string and gets back the combined stdout/stderr, exit code, and a truncation notice if the output was too large. For example:
+When the agent calls the `execute` tool, it provides a `command` string and gets back the combined stdout/stderr, exit code, and a truncation notice if the output was too large.
+
+You can also call the backend `execute()` method directly in your application code.
+
+
+
+For example:
 
 ```
 4
@@ -207,6 +217,8 @@ Inside the sandbox, the agent uses its own filesystem tools (`read_file`, `write
 </Note>
 
 
+
+
 ## Lifecycle and reconnection
 
 ### Basic lifecycle
@@ -263,6 +275,20 @@ const sandbox2 = await sandbox.create();
 ```
 
 Use the reuse pattern when you want continuity (e.g., installed dependencies persist across turns). Use the fresh pattern when you want clean isolation between tasks.
+
+
+## Provider integrations
+
+If you are looking for provider-specific setup and lifecycle details, see:
+
+
+
+<CardGroup cols={2}>
+    <Card title="Modal" icon="/images/providers/modal-icon.svg" href="/oss/javascript/integrations/providers/modal" />
+    <Card title="Daytona" icon="/images/providers/daytona-icon.svg" href="/oss/javascript/integrations/providers/daytona" />
+    <Card title="Deno" icon="/images/providers/deno-icon.svg" href="/oss/javascript/integrations/providers/deno" />
+    <Card title="Node VFS" icon="/images/providers/nodejs-icon.svg" href="/oss/javascript/integrations/providers/node-vfs" />
+</CardGroup>
 
 
 ## Security considerations

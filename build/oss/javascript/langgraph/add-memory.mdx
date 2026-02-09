@@ -163,6 +163,51 @@ const graph = builder.compile({ store });
 ```
 
 
+### Access the store inside nodes
+
+Once you compile a graph with a store, LangGraph automatically injects the store into your node functions. The recommended way to access the store is through the `Runtime` object.
+
+
+
+```typescript
+import { StateGraph, StateSchema, MessagesValue, GraphNode, START } from "@langchain/langgraph";
+import { v4 as uuidv4 } from "uuid";
+
+const State = new StateSchema({
+  messages: MessagesValue,
+});
+
+const callModel: GraphNode<typeof State> = async (state, runtime) => {
+  const userId = runtime.context?.userId;
+  const namespace = [userId, "memories"];
+
+  // Search for relevant memories
+  const memories = await runtime.store?.search(namespace, {
+    query: state.messages.at(-1)?.content,
+    limit: 3,
+  });
+  const info = memories?.map((d) => d.value.data).join("\n") || "";
+
+  // ... Use memories in model call
+
+  // Store a new memory
+  await runtime.store?.put(namespace, uuidv4(), { data: "User prefers dark mode" });
+};
+
+const builder = new StateGraph(State)
+  .addNode("call_model", callModel)
+  .addEdge(START, "call_model");
+const graph = builder.compile({ store });
+
+// Pass context at invocation time
+await graph.invoke(
+  { messages: [{ role: "user", content: "hi" }] },
+  { configurable: { thread_id: "1" }, context: { userId: "1" } }
+);
+```
+
+
+
 ### Use in production
 
 In production, use a store backed by a database:
@@ -193,7 +238,7 @@ const graph = builder.compile({ store });
 
   ```typescript
   import { ChatAnthropic } from "@langchain/anthropic";
-  import { StateGraph, StateSchema, MessagesValue, GraphNode, START, LangGraphRunnableConfig } from "@langchain/langgraph";
+  import { StateGraph, StateSchema, MessagesValue, GraphNode, START } from "@langchain/langgraph";
   import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
   import { PostgresStore } from "@langchain/langgraph-checkpoint-postgres/store";
   import { v4 as uuidv4 } from "uuid";
@@ -204,17 +249,10 @@ const graph = builder.compile({ store });
 
   const model = new ChatAnthropic({ model: "claude-haiku-4-5-20251001" });
 
-  const DB_URI = "postgresql://postgres:postgres@localhost:5442/postgres?sslmode=disable";
-
-  const store = PostgresStore.fromConnString(DB_URI);
-  const checkpointer = PostgresSaver.fromConnString(DB_URI);
-  // await store.setup();
-  // await checkpointer.setup();
-
-  const callModel: GraphNode<typeof State> = async (state, config) => {
-    const userId = config.configurable?.userId;
+  const callModel: GraphNode<typeof State> = async (state, runtime) => {
+    const userId = runtime.context?.userId;
     const namespace = ["memories", userId];
-    const memories = await config.store?.search(namespace, { query: state.messages.at(-1)?.content });
+    const memories = await runtime.store?.search(namespace, { query: state.messages.at(-1)?.content });
     const info = memories?.map(d => d.value.data).join("\n") || "";
     const systemMsg = `You are a helpful assistant talking to the user. User info: ${info}`;
 
@@ -222,7 +260,7 @@ const graph = builder.compile({ store });
     const lastMessage = state.messages.at(-1);
     if (lastMessage?.content?.toLowerCase().includes("remember")) {
       const memory = "User name is Bob";
-      await config.store?.put(namespace, uuidv4(), { data: memory });
+      await runtime.store?.put(namespace, uuidv4(), { data: memory });
     }
 
     const response = await model.invoke([
@@ -231,6 +269,13 @@ const graph = builder.compile({ store });
     ]);
     return { messages: [response] };
   };
+
+  const DB_URI = "postgresql://postgres:postgres@localhost:5442/postgres?sslmode=disable";
+
+  const store = PostgresStore.fromConnString(DB_URI);
+  const checkpointer = PostgresSaver.fromConnString(DB_URI);
+  // await store.setup();
+  // await checkpointer.setup();
 
   const builder = new StateGraph(State)
     .addNode("call_model", callModel)
@@ -241,30 +286,16 @@ const graph = builder.compile({ store });
     store,
   });
 
-  const config = {
-    configurable: {
-      thread_id: "1",
-      userId: "1",
-    }
-  };
-
   for await (const chunk of await graph.stream(
     { messages: [{ role: "user", content: "Hi! Remember: my name is Bob" }] },
-    { ...config, streamMode: "values" }
+    { configurable: { thread_id: "1" }, context: { userId: "1" }, streamMode: "values" }
   )) {
     console.log(chunk.messages.at(-1)?.content);
   }
 
-  const config2 = {
-    configurable: {
-      thread_id: "2",
-      userId: "1",
-    }
-  };
-
   for await (const chunk of await graph.stream(
     { messages: [{ role: "user", content: "what is my name?" }] },
-    { ...config2, streamMode: "values" }
+    { configurable: { thread_id: "2" }, context: { userId: "1" }, streamMode: "values" }
   )) {
     console.log(chunk.messages.at(-1)?.content);
   }
@@ -328,9 +359,9 @@ const items = await store.search(["user_123", "memories"], {
     await store.put(["user_123", "memories"], "1", { text: "I love pizza" });
     await store.put(["user_123", "memories"], "2", { text: "I am a plumber" });
 
-    const chat: GraphNode<typeof State> = async (state, config) => {
+    const chat: GraphNode<typeof State> = async (state, runtime) => {
       // Search based on user's last message
-      const items = await config.store.search(
+      const items = await runtime.store.search(
         ["user_123", "memories"],
         { query: state.messages.at(-1)?.content, limit: 2 }
       );

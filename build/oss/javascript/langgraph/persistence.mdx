@@ -400,12 +400,16 @@ A [state schema](/oss/javascript/langgraph/graph-api#schema) specifies a set of 
 
 But, what if we want to retain some information _across threads_? Consider the case of a chatbot where we want to retain specific information about the user across _all_ chat conversations (e.g., threads) with that user!
 
-With checkpointers alone, we cannot share information across threads. This motivates the need for the [`Store`](https://reference.langchain.com/python/langgraph/store/) interface. As an illustration, we can define an `InMemoryStore` to store information about a user across threads. We simply compile our graph with a checkpointer, as before, and with our new `in_memory_store` variable.
+With checkpointers alone, we cannot share information across threads. This motivates the need for the [`Store`](https://reference.langchain.com/python/langgraph/store/) interface. As an illustration, we can define an `InMemoryStore` to store information about a user across threads. We simply compile our graph with a checkpointer, as before, and pass the store.
 
 <Info>
 **LangGraph API handles stores automatically**
 When using the LangGraph API, you don't need to implement or configure stores manually. The API handles all storage infrastructure for you behind the scenes.
 </Info>
+
+<Note>
+[`InMemoryStore`](/oss/javascript/langgraph/reference/store/#langgraph.store.memory.InMemoryStore) is suitable for development and testing. For production, use a persistent store like `PostgresStore` or `RedisStore`. All implementations extend [`BaseStore`](/oss/javascript/langgraph/reference/store/#langgraph.store.base.BaseStore), which is the type annotation to use in node function signatures.
+</Note>
 
 ### Basic usage
 
@@ -560,7 +564,7 @@ We invoke the graph with a `thread_id`, as before, and also with a `user_id`, wh
 ```typescript
 // Invoke the graph
 const userId = "1";
-const config = { configurable: { thread_id: "1", user_id: userId } };
+const config = { configurable: { thread_id: "1" }, context: { userId } };
 
 // First let's just say hi to the AI
 for await (const update of await graph.stream(
@@ -574,7 +578,7 @@ for await (const update of await graph.stream(
 
 
 
-We can access the `memoryStore` and the `user_id` in _any node_ by accessing `config` and `store` as node arguments. Here's how we might use semantic search in a node to find relevant memories:
+You can access the store and the `userId` in _any node_ with the `runtime` argument. Here's how you might use it to save memories:
 
 ```typescript
 import { StateSchema, MessagesValue, Runtime } from "@langchain/langgraph";
@@ -650,7 +654,7 @@ If we create a new thread, we can still access the same memories so long as the 
 
 ```typescript
 // Invoke the graph
-const config = { configurable: { thread_id: "2", user_id: "1" } };
+const config = { configurable: { thread_id: "2" }, context: { userId: "1" } };
 
 // Let's say hi again
 for await (const update of await graph.stream(

@@ -4,6 +4,9 @@ sidebarTitle: Sandboxes
 description: Execute code in isolated environments with sandbox backends
 ---
 
+import SandboxBasicPy from '/snippets/deepagents-sandbox-basic-py.mdx';
+import SandboxBasicJs from '/snippets/deepagents-sandbox-basic-js.mdx';
+
 Agents generate code, interact with filesystems, and run shell commands. Because we can't predict what an agent might do, it's important that its environment is isolated so it can't access credentials, files, or the network. Sandboxes provide this isolation by creating a boundary between the agent's execution environment and your host system.
 
 In deep agents, **sandboxes are [backends](/oss/javascript/deepagents/backends)** that define the environment where the agent operates. Unlike other backends (State, Filesystem, Store) which only expose file operations, sandbox backends also give the agent an `execute` tool for running shell commands. When you configure a sandbox backend, the agent gets:
@@ -57,37 +60,8 @@ graph LR
 
 ## Basic usage
 
-```typescript
-import { createDeepAgent } from "deepagents";
-import { ChatAnthropic } from "@langchain/anthropic";
-import { DenoSandbox } from "@langchain/deno";
+<SandboxBasicJs />
 
-// Create and initialize the sandbox
-const sandbox = await DenoSandbox.create({
-  memoryMb: 1024,
-  lifetime: "10m",
-});
-
-try {
-  const agent = createDeepAgent({
-    model: new ChatAnthropic({ model: "claude-opus-4-6" }),
-    systemPrompt: "You are a JavaScript coding assistant with sandbox access.",
-    backend: sandbox,
-  });
-
-  const result = await agent.invoke({
-    messages: [
-      {
-        role: "user",
-        content:
-          "Create a simple HTTP server using Deno.serve and test it with curl",
-      },
-    ],
-  });
-} finally {
-  await sandbox.close();
-}
-```
 
 
 

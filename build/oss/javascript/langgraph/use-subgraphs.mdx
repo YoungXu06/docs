@@ -381,10 +381,9 @@ When you enable [persistence](/oss/javascript/langgraph/persistence), you can [i
 You can inspect the graph state via `graph.getState(config)`. To view the subgraph state, you can use `graph.getState(config, { subgraphs: true })`.
 
 
-<Warning>
-**Available **only** when interrupted**
-Subgraph state can only be viewed **when the subgraph is interrupted**. Once you resume the graph, you won't be able to access the subgraph state.
-</Warning>
+<Note>
+Viewing subgraph state requires that LangGraph can **statically discover** the subgraph — i.e., it is [added as a node](#add-a-graph-as-a-node) or [invoked from a node function](#invoke-a-graph-from-a-node). It does not work when a subgraph is called inside a [tool](/oss/javascript/langchain/tools) function or other indirection (e.g., the [subagents](/oss/javascript/langchain/multi-agent/subagents) pattern). Note that interrupts themselves still propagate to the top-level graph regardless of nesting.
+</Note>
 
 <Accordion title="View interrupted subgraph state">
 

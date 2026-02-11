@@ -392,7 +392,7 @@ You can pass one or more file paths to the `memory` parameter when creating your
     from deepagents.backends.utils import create_file_data
     from langgraph.checkpoint.memory import MemorySaver
 
-    with urlopen("https://raw.githubusercontent.com/langchain-ai/deepagents/refs/heads/master/examples/text-to-sql-agent/AGENTS.md") as response:
+    with urlopen("https://raw.githubusercontent.com/langchain-ai/deepagents/refs/heads/main/examples/text-to-sql-agent/AGENTS.md") as response:
         agents_md = response.read().decode("utf-8")
     checkpointer = MemorySaver()
 
@@ -427,7 +427,7 @@ You can pass one or more file paths to the `memory` parameter when creating your
     from deepagents.backends.utils import create_file_data
     from langgraph.store.memory import InMemoryStore
 
-    with urlopen("https://raw.githubusercontent.com/langchain-ai/deepagents/refs/heads/master/examples/text-to-sql-agent/AGENTS.md") as response:
+    with urlopen("https://raw.githubusercontent.com/langchain-ai/deepagents/refs/heads/main/examples/text-to-sql-agent/AGENTS.md") as response:
         agents_md = response.read().decode("utf-8")
 
     # Create the store and add the file to it
